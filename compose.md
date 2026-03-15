@@ -173,3 +173,12 @@ mongodb:
 7. restart: on-failure (The Safety Net)
 
 - Deep Insight: যদি আপনার কোডে কোনো সিনট্যাক্স এরর থাকে বা ডাটাবেস কানেকশন না পেয়ে ব্যাকএন্ড ক্র্যাশ করে, তবে ডকার তাকে আবার অটো-রিস্টার্ট দেবে। on-failure মানে হলো—যদি অ্যাপটি কোনো এরর (Non-zero exit code) খেয়ে বন্ধ হয়, তবেই সে রিস্টার্ট হবে।
+
+## Same goes for frontend
+
+## volumes
+
+1. volumes: সেকশন
+
+ফাইলের শেষে যখন আপনি আবার volumes: লিখে তার নিচে mongodata: লিখছেন, এটাকে বলা হয় Top-Level Volumes Key।
+
