@@ -182,3 +182,130 @@ mongodb:
 
 ফাইলের শেষে যখন আপনি আবার volumes: লিখে তার নিচে mongodata: লিখছেন, এটাকে বলা হয় Top-Level Volumes Key।
 
+___
+
+## docker-compose.yml হলো একটা "blueprint" বা "নকশা"
+এই file পড়ে Docker বোঝে:
+  - কতগুলো container চালাতে হবে
+  - কোন image বা Dockerfile থেকে বানাতে হবে
+  - কোন port এ চলবে
+  - কীভাবে একে অপরের সাথে কথা বলবে
+  - Data কোথায় রাখবে
+
+```bash
+version: '3.8'
+```
+
+এটা বলছে: "এই file টা Docker Compose এর 3.8 format এ লেখা।"
+
+Docker Compose বিভিন্ন সময়ে বিভিন্ন features add করেছে। Version দেখে Docker বোঝে কোন features available। `3.8` এখন পর্যন্ত সবচেয়ে stable এবং common।
+
+নতুন Docker এ এটা আর দরকার নেই, তাই warning দেয়:
+the attribute `version` is obsolete
+
+`services:`
+```bash
+এই keyword এর নিচে সব containers define করা হয়। প্রতিটা entry = একটা container।
+```
+
+```bash
+services:
+  mongodb:    ← Container 1
+  backend:    ← Container 2
+  forntend:   ← Container 3
+```
+
+## 🍃 MongoDB Service — পুরো ব্যাখ্যা
+
+mongodb:
+```bash
+এটা service এর **নাম**। এই নামটা দুটো কাজ করে:
+
+**১.** অন্য containers এই নামে তাকে চিনবে। যেমন backend এ লেখা আছে `mongodb://mongodb:27017` — এখানে `mongodb` মানে এই service এর নাম।
+
+**২.** Docker একটা internal DNS তৈরি করে। মানে `mongodb` লিখলে Docker নিজেই বুঝে নেয় কোন container এর IP।
+```
+তুমি যদি এই নাম "db" দিতে তাহলে:
+backend এ লিখতে হতো: mongodb://db:27017
+
+
+image: mongo:6
+```
+
+এই line বলছে: "Docker Hub থেকে MongoDB এর version 6 এর official image নামাও।"
+```
+image: mongo:6
+         │    │
+         │    └── version tag (6 = MongoDB 6.0)
+         └── image এর নাম (Docker Hub এ আছে)
+```
+
+এখানে `build` নেই কারণ আমরা নিজেরা MongoDB বানাচ্ছি না — MongoDB এর ready-made official image use করছি।
+
+`image` vs `build` পার্থক্য:
+```
+image: mongo:6     → Docker Hub থেকে নামাও (ready-made)
+build: ./backend   → নিজে Dockerfile দিয়ে বানাও (custom)
+
+container_name: todo-monodb
+Docker automatically container এর নাম দেয় এরকম: todo-app_mongodb_1
+container_name দিয়ে নিজে নাম দিলে সেটা use হয়। এতে সুবিধা:
+
+### নাম না দিলে
+docker logs todo-app_mongodb_1
+
+### নাম দিলে
+docker logs todo-monodb   ← সহজ!
+
+volumes:
+      - mongodata:/data/db
+```
+
+এটা দুটো জিনিসকে connect করছে:
+```
+mongodata          :/data/db
+    │                   │
+    │                   └── Container এর ভেতরে MongoDB যেখানে data রাখে
+    └── নিচে declare করা Named Volume
+```
+
+MongoDB সব data `/data/db` তে রাখে। এটা volume এর সাথে connect করা মানে:
+```
+Container delete হলো → MongoDB এর data গেল না
+আবার container চালালো → আগের সব data ফিরে পাবে ✅
+```
+
+Volume ছাড়া:
+```
+Container delete = সব data গেল 💀
+
+networks:
+      - todo-net
+```
+
+এই container টাকে `todo-net` নামের network এ রাখা হলো।
+```
+todo-net network:
+┌─────────────────────────────┐
+│  mongodb  backend  frontend │
+│  (সবাই একে অপরকে চেনে)    │
+└─────────────────────────────┘
+
+Same network এ না থাকলে containers একে অপরকে চিনতে পারত না। Backend mongodb নামে connect করতে পারত না।
+
+restart: always
+```
+
+MongoDB crash করলে বা Docker restart হলে কী করবে তা বলছে।
+```
+restart: always        → যেকোনো কারণে বন্ধ হলে আবার চালু করো
+restart: on-failure    → শুধু error এ বন্ধ হলে চালু করো
+restart: unless-stopped → manually বন্ধ না করলে সবসময় চালু রাখো
+restart: "no"          → কখনো restart করো না
+
+MongoDB কে always দেওয়া হয়েছে কারণ database সবসময় available থাকা দরকার।
+
+# ⚙️ Backend Service — পুরো ব্যাখ্যা
+
+backend:
+Service এর নাম backend। Frontend container এই নামে তাকে চিনবে।
