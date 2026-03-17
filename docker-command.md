@@ -263,5 +263,140 @@ docker compose build
 ```bash
 docker compose build --no-cache
 ```
-```bash
+### জায়গা ১ — Service এর ভেতরে
+services:
+  mongodb:
+    volumes:
+      - mongodata:/data/db    ← "USE করছি"
+
+### জায়গা ২ — নিচে top-level
+volumes:
+  mongodata:                  ← "DECLARE করছি"
+
+এটা ঠিক যেমন JavaScript এ:
+
+// আগে declare করতে হয়
+const myVariable;
+
+// তারপর use করতে পারো
+myVariable = "hello";
+
+Docker ও same। আগে বলতে হবে "এই নামে একটা volume আছে", তারপর service এ use করতে পারবে।
+
+### এটা না লিখলে এই error আসবে:
+`service "mongodb" refers to undefined volume mongodata`
+volumes:
+  mongodata:
+
+**mongodata: এর পরে কিছু নেই কেন?**
+
+volumes:
+  mongodata:
+    driver: local        # এটা default, না লিখলেও same
+    driver_opts: {}      # এটাও default
 ```
+
+শুধু নাম লিখলে Docker নিজে সব default দিয়ে তৈরি করে। তাই শুধু `mongodata:` লিখলেই চলে।
+```
+Host এ physically কোথায় থাকে?
+/var/lib/docker/volumes/todo-app_mongodata/_data/
+
+Docker নিজে manage করে, তোমাকে কিছু করতে হয় না।
+
+### networks: todo-net: driver: bridge — এটা কী?
+এখানে তিনটা জিনিস আছে, একটা একটা করে বোঝো।
+
+1. networks: (top-level) — Declare করা
+### জায়গা ১ — Service এর ভেতরে
+services:
+  mongodb:
+    networks:
+      - todo-net    ← "এই network এ রাখো"
+
+### জায়গা ২ — নিচে top-level
+networks:
+  todo-net:         ← "এই নামে network declare করছি"
+
+2. driver: — Network এর ধরন
+```
+networks:
+  todo-net:
+    driver: bridge
+```
+
+Docker এ ৪ ধরনের network driver আছে:
+```bash
+bridge   → একই machine এর containers connect করে (99% কাজে এটাই)
+host     → Container host এর network directly use করে
+overlay  → আলাদা আলাদা machine এর containers connect করে (Kubernetes এ)
+none     → কোনো network নেই, সম্পূর্ণ isolated
+```
+তুমি bridge লিখেছো, এটাই সঠিক। এটা default ও।
+
+networks:
+  todo-net:
+    driver: bridge   ← এটা লিখলে
+
+networks:
+  todo-net:          ← এটা না লিখলেও same, bridge default
+```
+
+তাহলে কেন explicitly লিখবো? **Clarity এর জন্য।** কেউ file দেখলে বুঝবে কোন driver use হচ্ছে।
+
+---
+
+### ৩. Bridge Network আসলে কী?
+
+Real life analogy দিয়ে বোঝো:
+```
+তোমার বাড়িতে WiFi router আছে।
+Phone, Laptop, TV সব router এর সাথে connect।
+এরা নিজেদের মধ্যে কথা বলতে পারে।
+বাইরের কেউ directly ঢুকতে পারে না।
+
+Bridge Network = এই WiFi router
+Containers = Phone, Laptop, TV
+```
+```
+[todo-net bridge network]
+┌────────────────────────────────────┐
+│                                    │
+│  [mongodb]  [backend]  [frontend]  │
+│      ↕           ↕          ↕      │
+│   নিজেদের মধ্যে নাম দিয়ে কথা বলে  │
+│                                    │
+└────────────────────────────────────┘
+         ↕
+    বাইরে যায় ports দিয়ে
+    (5000:5000, 8080:80)
+```
+
+**Bridge এর কাজ ৩টা:**
+```
+১. Isolation:
+   todo-net এর বাইরের containers এদের দেখতে পাবে না
+
+২. DNS (নাম দিয়ে চেনা):
+   backend থেকে "mongodb" লিখলেই connect হয়
+   IP মনে রাখতে হয় না
+
+৩. Internal Communication:
+   mongodb port 27017 বাইরে expose না করেও
+   backend সেটা access করতে পারে
+```
+
+---
+
+### Default Bridge vs Custom Bridge — পার্থক্য
+```
+Default Bridge (Docker এর নিজের):
+  ❌ DNS নেই → IP দিয়ে connect করতে হয়
+  ❌ IP বদলে গেলে সব ভাঙে
+  ❌ সব containers একসাথে, isolation নেই
+
+Custom Bridge (তুমি তৈরি করলে):
+  ✅ DNS আছে → "mongodb" লিখলেই হয়
+  ✅ IP বদলালে কিছু হয় না, নাম কাজ করে
+  ✅ শুধু same network এর containers কথা বলতে পারে
+
+তাই সবসময় custom network তৈরি করো।

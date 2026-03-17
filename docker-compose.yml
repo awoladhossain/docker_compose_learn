@@ -43,6 +43,8 @@ services:
 
 volumes:
   mongodata:
+    driver: local
+    driver_opts: {}
 
 networks:
   todo-net:
