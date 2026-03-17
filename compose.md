@@ -402,4 +402,78 @@ MongoDB, Backend একসাথে start → Backend connect করতে গ�
 depends_on দিলে:
 MongoDB আগে start → তারপর Backend start → Connect হয়
 
+⚠️ একটা সীমাবদ্ধতা: depends_on শুধু container start হওয়া নিশ্চিত করে। MongoDB সম্পূর্ণ ready হতে ৩-৫ সেকেন্ড লাগতে পারে। তাই index.js এ retry logic লেখা আছে।
 
+networks:
+      - todo-net
+
+Backend কেও todo-net এ রাখা হলো। MongoDB আর Backend একই network এ, তাই কথা বলতে পারবে।
+
+restart: on-failure
+শুধু error এ crash হলে restart। Backend manually বন্ধ করলে restart করবে না।
+
+
+## ⚛️ Frontend Service — পুরো ব্যাখ্যা
+
+forntend:
+ ⚠️ Typo আছে এখানে! frontend হওয়ার কথা ছিল, forntend লেখা হয়েছে। কাজ করবে কারণ Docker এটাকে শুধু একটা নাম হিসেবে দেখে, কিন্তু confusing।
+
+build: ./frontend
+./frontend folder এর Dockerfile দিয়ে build।
+
+ports:
+      - "5173:5173"
+```
+```
+তুমি → localhost:5173 → Docker → container:5173 → Vite dev server
+
+Vite default port হলো 5173।
+
+volumes:
+      - ./frontend:/app
+      - /app/node_modules
+Backend এর মতোই। ./frontend folder bind mount করা, node_modules আলাদা রাখা।
+
+depends_on:
+      - backend
+```
+
+Frontend চালু হওয়ার আগে Backend চালু হবে।
+
+চালু হওয়ার order:
+```
+mongodb → backend → frontend
+
+💾 Volumes — পুরো ব্যাখ্যা
+
+volumes:
+    mongodata:
+```
+
+Named Volume declare করা হচ্ছে। Service এ `mongodata:/data/db` use করার আগে এখানে declare করতে হয়।
+
+শুধু নাম লিখলেই হয়, Docker বাকিটা করে:
+```
+Host এ physically থাকে:
+/var/lib/docker/volumes/todo-app_mongodata/_data/
+```
+
+এটা না লিখলে error আসত:
+```
+service "mongodb" refers to undefined volume mongodata
+
+🌐 Networks — পুরো ব্যাখ্যা
+
+networks:
+  todo-net:
+```
+
+Custom bridge network declare করা।
+
+এটা কেন দরকার? Default network এ containers IP দিয়ে কথা বলে, নাম দিয়ে না। Custom network এ Docker automatic DNS তৈরি করে:
+```
+Default network:
+backend → 172.17.0.2 (IP মনে রাখতে হয়, IP change হতে পারে)
+
+Custom network (todo-net):
+backend → "mongodb" লিখলেই হয় (Docker DNS করে দেয়)
