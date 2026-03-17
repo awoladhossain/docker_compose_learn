@@ -1,58 +1,71 @@
-# Container Commands
+# 🐳 Docker Commands — সম্পূর্ণ গাইড
+
+---
+
+## 📋 Container দেখো — `docker ps`
+
 ```bash
 docker ps
 ```
 
-Output:
-```bash
+**Output:**
+```
 CONTAINER ID   IMAGE           COMMAND                  CREATED         STATUS         PORTS                    NAMES
 a1b2c3d4e5f6   todo-backend    "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   0.0.0.0:5000->5000/tcp   todo-backend
 b2c3d4e5f6a1   mongo:6         "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   27017/tcp                todo-mongodb
 ```
 
-### বন্ধ সহ সব containers দেখো
-- docker ps -a
+---
 
-### শুধু container ID দেখো
-- docker ps -q
+### Container এর variables দেখো
 
-### বন্ধ সহ সব এর ID
-- docker ps -aq
+| কমান্ড | মানে |
+|---------|------|
+| `docker ps` | শুধু চলমান containers |
+| `docker ps -a` | বন্ধ সহ সব containers |
+| `docker ps -q` | শুধু container ID (চলমান) |
+| `docker ps -aq` | সব containers এর ID (বন্ধ সহ) |
 
-### # সব logs একবারে দেখো
-- docker logs todo-backend
+---
 
-### Live follow করো (নতুন log আসলে দেখাবে)
-- docker logs -f todo-backend
-
-### শেষ ২০ লাইন দেখো
-- docker logs --tail 20 todo-backend
-
-
-### শেষ ২০ লাইন + live follow
-- docker logs --tail 20 -f todo-backend
-
-### Timestamp সহ দেখো
-- docker logs -t todo-backend
-
-**কখন use করবে:**
-- App crash করেছে কেন? → docker logs container_name
-- MongoDB connect হচ্ছে না কেন? → docker logs todo-backend
-- Live request দেখতে চাও? → docker logs -f todo-backend
-
-## docker exec — চলমান container এ ঢোকো
+## 📝 Logs দেখো — `docker logs`
 
 ```bash
-# Container এর ভেতরে shell খোলো
-docker exec -it todo-backend sh
+docker logs todo-backend
+```
 
-# এখন container এর ভেতরে আছো
-# যা খুশি করো
+### Log এর options
+
+| কমান্ড | মানে |
+|---------|------|
+| `docker logs todo-backend` | সব logs একবারে |
+| `docker logs -f todo-backend` | Live follow (নতুন log আসলে দেখাবে) |
+| `docker logs --tail 20 todo-backend` | শেষ ২০ লাইন |
+| `docker logs --tail 20 -f todo-backend` | শেষ ২০ লাইন + live follow |
+| `docker logs -t todo-backend` | Timestamp সহ |
+
+> **কখন use করবে:**
+> - App crash করেছে কেন? → `docker logs container_name`
+> - MongoDB connect হচ্ছে না কেন? → `docker logs todo-backend`
+> - Live request দেখতে চাও? → `docker logs -f todo-backend`
+
+---
+
+## 🔧 Container এ ঢোকো — `docker exec`
+
+```bash
+docker exec -it todo-backend sh
+```
+
+এখন container এর ভেতরে আছো:
+```bash
 ls /app
 cat /app/index.js
 node --version
 exit   # বেরিয়ে আসো
 ```
+
+---
 
 ### Shell না খুলে সরাসরি command চালাও
 
@@ -62,13 +75,13 @@ docker exec todo-backend ls /app
 docker exec todo-backend cat /app/package.json
 ```
 
-`-it` মানে:
-```
--i = interactive (input দিতে পারবে)
--t = tty (terminal এর মতো দেখাবে)
-```
+> **`-it` মানে:**
+> - `-i` = interactive (input দিতে পারবে)
+> - `-t` = tty (terminal এর মতো দেখাবে)
 
-### docker inspect — Container এর সব details
+---
+
+## 🔍 Container এর details — `docker inspect`
 
 ```bash
 docker inspect todo-backend
@@ -85,50 +98,58 @@ docker inspect todo-backend | grep -A 10 "Env"
 ```
 
 ### Mounts দেখো
-
 ```bash
 docker inspect todo-backend | grep -A 10 "Mounts"
 ```
-### Container বন্ধ করো (gracefully)
+
+---
+
+## ⏸️ Container manage করো
+
+### বন্ধ করো (gracefully)
 ```bash
 docker stop todo-backend
 ```
 
-### Container চালু করো
+### চালু করো
 ```bash
 docker start todo-backend
 ```
 
-### Container restart করো
+### Restart করো
 ```bash
 docker restart todo-backend
 ```
 
-### একসাথে অনেকগুলো
+### একসাথে অনেক containers
 ```bash
 docker stop todo-backend todo-frontend todo-mongodb
 ```
 
-### Container delete (আগে বন্ধ করতে হবে)
+### Delete করো (আগে বন্ধ করতে হবে)
 ```bash
 docker stop todo-backend
 docker rm todo-backend
 ```
 
-### চলমান container force delete
+### Force delete (container চলছে তাও)
 ```bash
 docker rm -f todo-backend
 ```
 
-### সব বন্ধ container delete
+### সব বন্ধ containers delete
 ```bash
 docker container prune
 ```
 
-### চলমান সহ সব delete (সাবধানে!)
+### চলমান সহ সব delete ⚠️ সাবধানে!
 ```bash
 docker rm -f $(docker ps -aq)
 ```
+
+---
+
+## 🖼️ Images manage করো
 
 ### সব images দেখো
 ```bash
@@ -150,22 +171,26 @@ docker rmi -f todo-app-backend
 docker image prune
 ```
 
-### সব unused images delete
+### সব unused images delete ⚠️
 ```bash
 docker image prune -a
 ```
+
+---
+
+## 💾 Volumes manage করো
 
 ### সব volumes দেখো
 ```bash
 docker volume ls
 ```
 
-### Volume details
+### Volume details দেখো
 ```bash
 docker volume inspect todo-app_mongodata
 ```
 
-### Volume delete
+### Volume delete করো
 ```bash
 docker volume rm todo-app_mongodata
 ```
@@ -175,13 +200,17 @@ docker volume rm todo-app_mongodata
 docker volume prune
 ```
 
+---
+
+## 🧹 সব কিছু clean করো
+
 ### সব unused জিনিস একসাথে delete
-**(stopped containers, unused networks, dangling images)**
+**stopped containers, unused networks, dangling images**
 ```bash
 docker system prune
 ```
 
-### Volume সহ সব unused delete (সাবধানে! data যাবে)
+### Volumes সহ সব unused delete ⚠️ সাবধানে! Data যাবে
 ```bash
 docker system prune -a --volumes
 ```
@@ -191,17 +220,21 @@ docker system prune -a --volumes
 docker system df
 ```
 
+---
+
+## 🐳 Docker Compose Commands
+
 ### Build করে চালু করো
 ```bash
 docker compose up --build
 ```
 
-### Background এ চালু
+### Background এ চালু করো
 ```bash
 docker compose up -d
 ```
 
-### Background এ build করে চালু
+### Background এ build করে চালু করো
 ```bash
 docker compose up -d --build
 ```
@@ -241,11 +274,13 @@ docker compose logs -f
 docker compose exec backend sh
 docker compose exec mongodb mongosh
 ```
+
 ### চলমান services দেখো
 ```bash
 docker compose ps
 ```
-### Restart
+
+### Restart করো
 ```bash
 docker compose restart
 docker compose restart backend
@@ -255,99 +290,124 @@ docker compose restart backend
 ```bash
 docker compose up backend
 ```
+
 ### Build করো (run না করে)
 ```bash
 docker compose build
 ```
-### Cache ছাড়া build
+
+### Cache ছাড়া build করো
 ```bash
 docker compose build --no-cache
 ```
-### জায়গা ১ — Service এর ভেতরে
+
+---
+
+## 📝 docker-compose.yml — Volumes Configuration
+
+### জায়গা ১ — Service এর ভেতরে use করা
+```yaml
 services:
   mongodb:
     volumes:
       - mongodata:/data/db    ← "USE করছি"
+```
 
-### জায়গা ২ — নিচে top-level
+### জায়গা २ — নিচে top-level declare করা
+```yaml
 volumes:
   mongodata:                  ← "DECLARE করছি"
+```
 
-এটা ঠিক যেমন JavaScript এ:
+> **JavaScript এর মতো:**
+> ```javascript
+> // আগে declare করতে হয়
+> const myVariable;
+>
+> // তারপর use করতে পারো
+> myVariable = "hello";
+> ```
+>
+> Docker ও same। আগে বলতে হবে "এই নামে একটা volume আছে", তারপর service এ use করতে পারবে।
 
-// আগে declare করতে হয়
-const myVariable;
+### Error না পেতে এটা দিতেই হবে:
+```
+service "mongodb" refers to undefined volume mongodata
+```
 
-// তারপর use করতে পারো
-myVariable = "hello";
+### `mongodata:` এর পরে কিছু না থাকলে?
 
-Docker ও same। আগে বলতে হবে "এই নামে একটা volume আছে", তারপর service এ use করতে পারবে।
-
-### এটা না লিখলে এই error আসবে:
-`service "mongodb" refers to undefined volume mongodata`
-volumes:
-  mongodata:
-
-**mongodata: এর পরে কিছু নেই কেন?**
-
+```yaml
 volumes:
   mongodata:
     driver: local        # এটা default, না লিখলেও same
     driver_opts: {}      # এটাও default
 ```
 
-শুধু নাম লিখলে Docker নিজে সব default দিয়ে তৈরি করে। তাই শুধু `mongodata:` লিখলেই চলে।
+> শুধু নাম লিখলে Docker নিজে সব default দিয়ে তৈরি করে। তাই শুধু `mongodata:` লিখলেই চলে।
+
+### Host এ physically কোথায় থাকে?
 ```
-Host এ physically কোথায় থাকে?
 /var/lib/docker/volumes/todo-app_mongodata/_data/
+```
 
-Docker নিজে manage করে, তোমাকে কিছু করতে হয় না।
+> Docker নিজে manage করে, তোমাকে কিছু করতে হয় না।
 
-### networks: todo-net: driver: bridge — এটা কী?
-এখানে তিনটা জিনিস আছে, একটা একটা করে বোঝো।
+---
 
-1. networks: (top-level) — Declare করা
-### জায়গা ১ — Service এর ভেতরে
+## 🌐 docker-compose.yml — Networks Configuration
+
+### জায়গা १ — Service এর ভেতরে
+```yaml
 services:
   mongodb:
     networks:
       - todo-net    ← "এই network এ রাখো"
+```
 
-### জায়গা ২ — নিচে top-level
+### জায়গা २ — নিচে top-level declare করা
+```yaml
 networks:
   todo-net:         ← "এই নামে network declare করছি"
-
-2. driver: — Network এর ধরন
-```
-networks:
-  todo-net:
     driver: bridge
 ```
 
-Docker এ ৪ ধরনের network driver আছে:
-```bash
-bridge   → একই machine এর containers connect করে (99% কাজে এটাই)
-host     → Container host এর network directly use করে
-overlay  → আলাদা আলাদা machine এর containers connect করে (Kubernetes এ)
-none     → কোনো network নেই, সম্পূর্ণ isolated
-```
-তুমি bridge লিখেছো, এটাই সঠিক। এটা default ও।
+---
 
+## 🔗 Network Drivers — কোনটা use করবো?
+
+Docker এ ४ ধরনের network driver আছে:
+
+| Driver | ব্যবহার |
+|--------|---------|
+| `bridge` | একই machine এর containers connect করে (99% কাজে এটাই) |
+| `host` | Container host এর network directly use করে |
+| `overlay` | আলাদা আলাদা machine এর containers connect করে (Kubernetes) |
+| `none` | কোনো network নেই, সম্পূর্ণ isolated |
+
+> তুমি bridge লিখেছো, এটাই সঠিক এবং default ও।
+
+### explicit লিখবে নাকি না লিখবে?
+
+```yaml
+# এটা লিখলে
 networks:
   todo-net:
-    driver: bridge   ← এটা লিখলে
+    driver: bridge
 
+# এটা না লিখলেও same, bridge default
 networks:
-  todo-net:          ← এটা না লিখলেও same, bridge default
+  todo-net:
 ```
 
-তাহলে কেন explicitly লিখবো? **Clarity এর জন্য।** কেউ file দেখলে বুঝবে কোন driver use হচ্ছে।
+> **Clarity এর জন্য explicitly লিখো।** কেউ file দেখলে বুঝবে কোন driver use হচ্ছে।
 
 ---
 
-### ৩. Bridge Network আসলে কী?
+## 🌉 Bridge Network — আসলে কী?
 
-Real life analogy দিয়ে বোঝো:
+**Real life analogy:**
+
 ```
 তোমার বাড়িতে WiFi router আছে।
 Phone, Laptop, TV সব router এর সাথে connect।
@@ -357,6 +417,9 @@ Phone, Laptop, TV সব router এর সাথে connect।
 Bridge Network = এই WiFi router
 Containers = Phone, Laptop, TV
 ```
+
+### Network Diagram
+
 ```
 [todo-net bridge network]
 ┌────────────────────────────────────┐
@@ -371,32 +434,26 @@ Containers = Phone, Laptop, TV
     (5000:5000, 8080:80)
 ```
 
-**Bridge এর কাজ ৩টা:**
-```
-১. Isolation:
-   todo-net এর বাইরের containers এদের দেখতে পাবে না
+### Bridge এর কাজ ३টা
 
-২. DNS (নাম দিয়ে চেনা):
-   backend থেকে "mongodb" লিখলেই connect হয়
-   IP মনে রাখতে হয় না
+့ **१. Isolation:**
+> todo-net এর বাইরের containers এদের দেখতে পাবে না
 
-৩. Internal Communication:
-   mongodb port 27017 বাইরে expose না করেও
-   backend সেটা access করতে পারে
-```
+> **२. DNS (নাম দিয়ে চেনা):**
+> backend থেকে "mongodb" লিখলেই connect হয়, IP মনে রাখতে হয় না
+
+> **३. Internal Communication:**
+> mongodb port 27017 বাইরে expose না করেও backend সেটা access করতে পারে
 
 ---
 
-### Default Bridge vs Custom Bridge — পার্থক্য
-```
-Default Bridge (Docker এর নিজের):
-  ❌ DNS নেই → IP দিয়ে connect করতে হয়
-  ❌ IP বদলে গেলে সব ভাঙে
-  ❌ সব containers একসাথে, isolation নেই
+## 🔄 Default Bridge vs Custom Bridge
 
-Custom Bridge (তুমি তৈরি করলে):
-  ✅ DNS আছে → "mongodb" লিখলেই হয়
-  ✅ IP বদলালে কিছু হয় না, নাম কাজ করে
-  ✅ শুধু same network এর containers কথা বলতে পারে
+| Feature | Default Bridge | Custom Bridge |
+|---------|---|---|
+| DNS | ❌ নেই | ✅ আছে |
+| নাম দিয়ে connect | ❌ হয় না | ✅ হয় (mongodb লিখলেই) |
+| IP বদলালে | ❌ সব ভাঙে | ✅ কিছু হয় না |
+| Isolation | ❌ নেই | ✅ আছে |
 
-তাই সবসময় custom network তৈরি করো।
+> **তাই সবসময় custom network তৈরি করো।** এটাই best practice।
