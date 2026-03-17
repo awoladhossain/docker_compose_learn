@@ -309,3 +309,97 @@ MongoDB কে always দেওয়া হয়েছে কারণ databas
 
 backend:
 Service এর নাম backend। Frontend container এই নামে তাকে চিনবে।
+
+build: ./backend
+```
+
+`./backend` folder এর Dockerfile দিয়ে image build করবে।
+```
+build: ./backend
+          │
+          └── এই folder এ Dockerfile খুঁজবে
+              ~/todo-app/backend/Dockerfile
+
+image দিলে Docker Hub থেকে নামাত। build দিলে নিজে বানায়।
+
+```bash
+container_name: todo-backend
+```
+Container এর custom নাম। `docker logs todo-backend` দিয়ে সহজে access।
+
+ports:
+      - "5000:5000"
+```
+
+এটা port mapping:
+```
+"5000:5000"
+  │     │
+  │     └── Container এর port (Express এই port এ চলে)
+  └── তোমার PC এর port (browser থেকে এই port এ access)
+```
+
+এটা ছাড়া তুমি `localhost:5000` দিয়ে access করতে পারতে না। Container isolated, port map না করলে বাইরে থেকে ঢোকা যায় না।
+```
+তুমি → localhost:5000 → Docker → container:5000 → Express
+
+
+environment:
+      - MONGO_URL=mongodb://mongodb:27017/tododb
+      - PORT=5000
+```
+
+Container এর ভেতরে environment variables set করা। `index.js` এ এগুলো `process.env.MONGO_URL` দিয়ে পড়া হয়।
+
+`MONGO_URL` এ `mongodb` হলো MongoDB service এর নাম:
+```
+mongodb://mongodb:27017/tododb
+           │       │      │
+           │       │      └── Database এর নাম
+           │       └── Port
+           └── Service এর নাম (Docker DNS resolve করবে)
+
+Docker automatically mongodb → সেই container এর IP তে translate করে।
+
+
+volumes:
+      - ./backend:/app
+      - /app/node_modules
+```
+
+**Line 1: `./backend:/app`** — Bind Mount
+```
+./backend (তোমার PC)  ←→  /app (container এর ভেতরে)
+```
+
+তুমি `backend/index.js` edit করলে container এর `/app/index.js` সাথে সাথে বদলে যাবে। Development এ live reload এর জন্য।
+
+**Line 2: `/app/node_modules`** — Anonymous Volume
+
+এটা একটু tricky। উপরের line এর কারণে একটা সমস্যা হয়:
+```
+./backend:/app করলে:
+Host এর backend folder → Container এর /app
+
+কিন্তু host এ node_modules নেই!
+তাহলে container এর /app/node_modules ও override হয়ে মুছে যাবে 💀
+```
+
+`/app/node_modules` লেখার মানে হলো:
+```
+এই folder টাকে bind mount থেকে বাদ রাখো।
+Container নিজে এখানে যা install করেছে সেটা থাকবে।
+
+depends_on:
+      - mongodb
+```
+
+Backend start হওয়ার আগে MongoDB container start হবে।
+```
+depends_on ছাড়া:
+MongoDB, Backend একসাথে start → Backend connect করতে গিয়ে MongoDB পায় না → Error
+
+depends_on দিলে:
+MongoDB আগে start → তারপর Backend start → Connect হয়
+
+
